@@ -1,0 +1,2 @@
+# Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset-
+End-to-end retail forecasting pipeline for store–item demand (M5). Includes robust time-series validation, feature store-style engineering (lags, rolling windows, price/promo signals, events), model benchmarking, and error analysis across hierarchy levels (item/store/category). Designed for reproducible experimentation in a single notebook workflow
