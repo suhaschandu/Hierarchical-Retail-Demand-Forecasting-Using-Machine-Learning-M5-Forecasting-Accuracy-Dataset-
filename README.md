@@ -214,7 +214,6 @@ This shows that:
 │   ├── calendar.csv
 │   ├── sell_prices.csv
 │   └── sales_train_validation.csv
-└── outputs/                 # Optional folder for plots, logs, and saved results
 ```
 
 ## How to Run
