@@ -50,7 +50,7 @@ demand_forecast/
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/suhaschandu/Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset-.git
+    git clone https://github.com/suhaschandu/Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset
     cd demand_forecast
     ```
 
