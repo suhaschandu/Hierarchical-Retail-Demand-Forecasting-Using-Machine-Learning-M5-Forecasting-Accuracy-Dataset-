@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retail Demand Forecasting | Team D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a;
+            --surface: #0f1218;
+            --surface-accent: #1a1f29;
+            --accent: #00ffc3;
+            --accent-glow: rgba(0, 255, 195, 0.4);
+            --secondary: #00a2ff;
+            --text: #e1e4eb;
+            --text-dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* --- Noise Overlay --- */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--surface-accent); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* --- Layout --- */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        header {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(rgba(5, 7, 10, 0.7), rgba(5, 7, 10, 0.7)), url('hero.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .hero-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 70% 30%, var(--accent-glow) 0%, transparent 50%),
+                        radial-gradient(circle at 20% 70%, rgba(0, 162, 255, 0.15) 0%, transparent 50%);
+            opacity: 0.6;
+        }
+
+        .hero-content {
+            z-index: 1;
+        }
+
+        .hero-tag {
+            font-family: var(--font-mono);
+            color: var(--accent);
+            font-size: 0.9rem;
+            letter-spacing: 0.2rem;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            display: block;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s forwards;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.03em;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s 0.2s forwards;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 3rem;
+            margin-top: 3rem;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeInUp 0.8s 0.4s forwards;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+        }
+
+        /* --- Sections --- */
+        section {
+            padding: 8rem 0;
+        }
+
+        .section-label {
+            font-family: var(--font-mono);
+            color: var(--accent);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            letter-spacing: -0.02em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .card p {
+            color: var(--text-dim);
+            font-size: 1rem;
+        }
+
+        /* --- Blog Content --- */
+        .story-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .story-text {
+            font-size: 1.2rem;
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+        }
+
+        .story-text b {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, var(--surface), var(--bg));
+            border-left: 4px solid var(--accent);
+            padding: 2rem;
+            margin: 3rem 0;
+            border-radius: 0 1rem 1rem 0;
+        }
+
+        /* --- Architecture Diagram --- */
+        .arch-viz {
+            width: 100%;
+            height: 400px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            margin: 4rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .arch-node {
+            padding: 1rem 2rem;
+            background: var(--bg);
+            border: 1px solid var(--accent);
+            border-radius: 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            position: absolute;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        footer {
+            padding: 4rem 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1rem 2.5rem;
+            background: var(--accent);
+            color: var(--bg);
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 0.5rem;
+            margin-top: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-stats { flex-direction: column; gap: 1.5rem; }
+            h1 { font-size: 3.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="hero-content">
+                <span class="hero-tag">Team D Presenting</span>
+                <h1>Hierarchical<br>Demand Forecast</h1>
+                <p class="story-text" style="max-width: 600px; opacity: 0.8;">
+                    Predicting Walmart's retail pulse across 30,490 products and 10 stores. 
+                    A journey from 59 million rows to a <b>0.627 WRMSSE</b> precision.
+                </p>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">0.627</span>
+                        <span class="stat-label">WRMSSE Score</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">59M+</span>
+                        <span class="stat-label">Data Rows</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">30.5k</span>
+                        <span class="stat-label">Series Modelled</span>
+                    </div>
+                </div>
+                <a href="#blog" class="btn">Explore the Story</a>
+            </div>
+        </div>
+    </header>
+
+    <section id="blog">
+        <div class="container">
+            <div class="story-content reveal">
+                <span class="section-label">01. The Challenge</span>
+                <h2>Scalability Meets Hierarchy</h2>
+                <p class="story-text">
+                    Retail demand isn't just about total sales. It's a complex hierarchy: from the <b>Item</b> level to <b>Departments</b>, <b>Categories</b>, <b>Stores</b>, and <b>States</b>.
+                    Our task was to navigate the M5 dataset—one of the most challenging time-series competitions in history.
+                </p>
+                <p class="story-text">
+                    With 59 million rows of data, traditional time-series models like ARIMA or Prophet weren't enough. We needed a pipeline that was both <b>massive</b> and <b>precise</b>.
+                </p>
+
+                <div class="highlight-box">
+                    <p style="font-style: italic; color: #fff;">
+                        "The goal was not just to predict numbers, but to capture the rhythmic pulse of retail seasonality, price elasticities, and event-driven spikes."
+                    </p>
+                </div>
+            </div>
+
+            <div class="story-content reveal" style="margin-top: 8rem;">
+                <span class="section-label">02. Our Strategy</span>
+                <h2>The Global-Local Blend</h2>
+                <p class="story-text">
+                    We implemented a unique <b>Hybrid Architecture</b>. Instead of relying on a single "god model," we combined two distinct approaches:
+                </p>
+                
+                <div class="grid">
+                    <div class="card">
+                        <h3>Global LightGBM</h3>
+                        <p>A massive model trained on the entire dataset to learn cross-store patterns and broad seasonality.</p>
+                    </div>
+                    <div class="card">
+                        <h3>Local (Store x Cat)</h3>
+                        <p>Specialized models for each store and category to capture local market nuances and regional trends.</p>
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <p><b>The 50/50 Blend:</b> We found that averaging the predictions of these two models provided the most robust results, significantly reducing the WRMSSE from 0.71 to <b>0.627</b>.</p>
+                </div>
+            </div>
+
+            <div class="story-content reveal" style="margin-top: 8rem;">
+                <span class="section-label">03. Feature Engineering</span>
+                <h2>The 48 Signals</h2>
+                <p class="story-text">
+                    A model is only as good as its features. We engineered 48 unique signals across four categories:
+                </p>
+                
+                <div class="grid">
+                    <div class="card">
+                        <h3 style="color: var(--accent);">Temporal</h3>
+                        <p>Wday, month, year, event_types, and snap_days (SNAP benefits days).</p>
+                    </div>
+                    <div class="card">
+                        <h3 style="color: var(--secondary);">Lags & Rolling</h3>
+                        <p>7, 14, 28, and 30-day sales lags and rolling means to capture momentum.</p>
+                    </div>
+                    <div class="card">
+                        <h3 style="color: #ff5c5c;">Price Dynamics</h3>
+                        <p>Price change from last week, relative price to department average.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="story-content reveal" style="margin-top: 8rem; text-align: center;">
+                <span class="section-label">04. Results</span>
+                <h2>Performance Metrics</h2>
+                <div class="grid" style="margin-top: 2rem;">
+                    <div class="card">
+                        <span class="stat-value">0.627</span>
+                        <p>Validation WRMSSE</p>
+                    </div>
+                    <div class="card">
+                        <span class="stat-value">1.4s</span>
+                        <p>Inference per Series</p>
+                    </div>
+                    <div class="card">
+                        <span class="stat-value">100%</span>
+                        <p>Hierarchical Coverage</p>
+                    </div>
+                </div>
+                <p class="story-text" style="margin-top: 3rem;">
+                    Our model successfully balanced accuracy across all 12 levels of the M5 hierarchy, ensuring that aggregate forecasts (State level) were just as reliable as granular forecasts (Item level).
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Team D | Hierarchical Retail Demand Forecasting Project</p>
+            <p style="margin-top: 0.5rem; opacity: 0.5;">Built with ⬡ Antigravity AI for the Final Presentation</p>
+        </div>
+    </footer>
+
+    <script>
+        // Reveal elements on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

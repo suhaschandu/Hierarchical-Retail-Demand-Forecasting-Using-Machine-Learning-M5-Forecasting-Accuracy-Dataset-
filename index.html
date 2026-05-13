@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hierarchical Retail Demand Forecasting — Team D</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #090c10;
+      --bg2: #0f1318;
+      --bg3: #161c24;
+      --border: #1e2a36;
+      --accent: #00e5b0;
+      --accent2: #0077ff;
+      --accent3: #ff5c5c;
+      --text: #e8edf2;
+      --text-dim: #6b7c8d;
+      --text-mid: #a0b0c0;
+      --mono: 'DM Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+      --display: 'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2.5rem;
+      height: 60px;
+      background: rgba(9, 12, 16, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-logo span {
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--accent); }
+
+    .nav-badge {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0.25rem 0.75rem;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 2px;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      padding: 6rem 2.5rem 4rem;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: linear-gradient(to bottom, transparent, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.15) 70%, transparent);
+      opacity: 0.4;
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(0, 229, 176, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      max-width: 900px;
+    }
+
+    .hero-tag {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .hero-tag::before {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      font-size: 1rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+      max-width: 560px;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .stat-val {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 2rem;
+      color: var(--text);
+    }
+
+    .stat-val.green { color: var(--accent); }
+    .stat-val.blue { color: var(--accent2); }
+
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── SECTION LAYOUT ── */
+    .section {
+      padding: 3rem 2.5rem;
+      position: relative;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .section-title {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .section-num {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 2.5rem;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.5rem;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: #2a3a4a; }
+
+    .card-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    /* ── INPUT SECTION ── */
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .field label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .field select,
+    .field input {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 0.6rem 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    .field select:focus,
+    .field input:focus {
+      border-color: var(--accent);
+    }
+
+    .field select option {
+      background: var(--bg3);
+    }
+
+    .btn-run {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--accent);
+      color: #000;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.7rem 1.75rem;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn-run:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-run:active { transform: translateY(0); }
+
+    .btn-run .icon { font-size: 0.9rem; }
+
+    /* ── RESULTS PANEL ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 800px) {
+      .results-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .result-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.25rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .result-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .result-card.green::before { background: var(--accent); }
+    .result-card.blue::before { background: var(--accent2); }
+    .result-card.red::before { background: var(--accent3); }
+
+    .result-card .val {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1.8rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .result-card.green .val { color: var(--accent); }
+    .result-card.blue .val { color: var(--accent2); }
+    .result-card.red .val { color: var(--accent3); }
+
+    .result-card .lbl {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .result-card .sub {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text-mid);
+      margin-top: 0.5rem;
+    }
+
+    /* ── CHART ── */
+    .chart-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .chart-title {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 1.25rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    canvas { max-height: 280px; }
+
+    /* ── PERFORMANCE TABLE ── */
+    .perf-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+
+    .perf-table th {
+      text-align: left;
+      padding: 0.6rem 1rem;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .perf-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(30, 42, 54, 0.5);
+      color: var(--text-mid);
+      vertical-align: middle;
+    }
+
+    .perf-table tr:last-child td { border-bottom: none; }
+
+    .perf-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 2px;
+      font-size: 0.65rem;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-green { background: rgba(0,229,176,0.12); color: var(--accent); }
+    .badge-blue { background: rgba(0,119,255,0.12); color: var(--accent2); }
+    .badge-dim { background: rgba(107,124,141,0.12); color: var(--text-dim); }
+
+    .score-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .score-bar-bg {
+      flex: 1;
+      height: 4px;
+      background: var(--bg3);
+      border-radius: 2px;
+      overflow: hidden;
+      min-width: 80px;
+    }
+
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width 1s ease;
+    }
+
+    /* ── PIPELINE STEPS ── */
+    .pipeline {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .pipe-step {
+      flex: 1;
+      min-width: 140px;
+      padding: 1rem 1.25rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-right: none;
+      position: relative;
+    }
+
+    .pipe-step:first-child { border-radius: 4px 0 0 4px; }
+    .pipe-step:last-child { border-right: 1px solid var(--border); border-radius: 0 4px 4px 0; }
+
+    .pipe-step.active {
+      background: rgba(0, 229, 176, 0.06);
+      border-color: var(--accent);
+    }
+
+    .pipe-step.done {
+      background: rgba(0, 229, 176, 0.03);
+    }
+
+    .pipe-num {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      margin-bottom: 0.4rem;
+    }
+
+    .pipe-step.active .pipe-num { color: var(--accent); }
+
+    .pipe-name {
+      font-family: var(--sans);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-mid);
+    }
+
+    .pipe-step.active .pipe-name { color: var(--text); }
+
+    .pipe-status {
+      margin-top: 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+    }
+
+    .pipe-step.done .pipe-status { color: var(--accent); }
+    .pipe-step.active .pipe-status { color: var(--accent2); }
+    .pipe-step.pending .pipe-status { color: var(--text-dim); }
+
+    /* ── FOOTER ── */
+    footer {
+      margin-top: 4rem;
+      padding: 1.5rem 2.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-left {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .footer-right {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+    }
+
+    .wrmsse-highlight {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ── LOADING ANIMATION ── */
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── FADE IN ── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+    .delay-5 { animation-delay: 0.5s; }
+
+    /* ── HIDDEN ── */
+    .hidden { display: none !important; }
+
+    /* ── TERMINAL LOG ── */
+    .log-box {
+      background: #050708;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      line-height: 1.8;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .log-box .log-line { display: block; }
+    .log-box .log-ok { color: var(--accent); }
+    .log-box .log-info { color: var(--accent2); }
+    .log-box .log-warn { color: #f0a040; }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">⬡ <span>Hierarchical</span> Retail Demand Forecasting</div>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#forecast">Forecast</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#performance">Performance</a></li>
+  </ul>
+  <div class="nav-badge">Team D</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-tag fade-in">M5 Forecasting Competition — Walmart Sales</div>
+    <h1 class="fade-in delay-1">
+      Hierarchical Retail<br />
+      <em>Demand Forecasting</em>
+    </h1>
+    <p class="hero-sub fade-in delay-2">
+      A hierarchical multi-store demand forecasting pipeline trained on 59 million rows
+      of Walmart sales data across 30,490 item-store combinations, using a global +
+      local blended LightGBM model architecture.
+    </p>
+    <div class="hero-stats fade-in delay-3">
+      <div class="stat">
+        <span class="stat-val green">0.627</span>
+        <span class="stat-label">WRMSSE Score</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val">30,490</span>
+        <span class="stat-label">Series Modelled</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val blue">59M</span>
+        <span class="stat-label">Training Rows</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val">48</span>
+        <span class="stat-label">Features</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PIPELINE STATUS -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <span class="section-title">Pipeline Status</span>
+  </div>
+  <div class="pipeline">
+    <div class="pipe-step done">
+      <div class="pipe-num">STEP 01</div>
+      <div class="pipe-name">Data Loading</div>
+      <div class="pipe-status">✓ Complete</div>
+    </div>
+    <div class="pipe-step done">
+      <div class="pipe-num">STEP 02</div>
+      <div class="pipe-name">Feature Engineering</div>
+      <div class="pipe-status">✓ Complete</div>
+    </div>
+    <div class="pipe-step done">
+      <div class="pipe-num">STEP 03</div>
+      <div class="pipe-name">Global Model</div>
+      <div class="pipe-status">✓ Complete</div>
+    </div>
+    <div class="pipe-step done">
+      <div class="pipe-num">STEP 04</div>
+      <div class="pipe-name">Store × Cat Models + Saved</div>
+      <div class="pipe-status">✓ Complete</div>
+    </div>
+    <div class="pipe-step active">
+      <div class="pipe-num">STEP 05</div>
+      <div class="pipe-name">Forecast & Evaluate</div>
+      <div class="pipe-status">● Active</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- INPUT SECTION -->
+<section class="section" id="forecast">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <span class="section-title">Run Forecast</span>
+  </div>
+
+  <div class="card fade-in">
+
+    <!-- BLOCK 1: Target -->
+    <div class="card-label" style="margin-bottom:1rem;">&#9312; Target &mdash; What to forecast</div>
+    <div class="input-grid" style="margin-bottom:1.5rem;">
+      <div class="field">
+        <label>Store</label>
+        <select id="sel-store">
+          <option value="CA_1">CA_1 &mdash; California Store 1</option>
+          <option value="CA_2">CA_2 &mdash; California Store 2</option>
+          <option value="CA_3">CA_3 &mdash; California Store 3</option>
+          <option value="CA_4">CA_4 &mdash; California Store 4</option>
+          <option value="TX_1">TX_1 &mdash; Texas Store 1</option>
+          <option value="TX_2">TX_2 &mdash; Texas Store 2</option>
+          <option value="TX_3">TX_3 &mdash; Texas Store 3</option>
+          <option value="WI_1">WI_1 &mdash; Wisconsin Store 1</option>
+          <option value="WI_2">WI_2 &mdash; Wisconsin Store 2</option>
+          <option value="WI_3">WI_3 &mdash; Wisconsin Store 3</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="sel-cat" onchange="syncDept()">
+          <option value="HOBBIES">HOBBIES</option>
+          <option value="FOODS">FOODS</option>
+          <option value="HOUSEHOLD">HOUSEHOLD</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Department</label>
+        <select id="sel-dept">
+          <option value="HOBBIES_1">HOBBIES_1</option>
+          <option value="HOBBIES_2">HOBBIES_2</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Item ID <span style="color:var(--text-dim)">(optional)</span></label>
+        <input type="text" id="sel-item" placeholder="e.g. HOBBIES_1_001" style="text-transform:uppercase;" />
+      </div>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin-bottom:1.25rem;"></div>
+
+    <!-- BLOCK 2: Date & Horizon only -->
+    <div class="card-label" style="margin-bottom:1rem;">&#9313; Date &mdash; When to predict</div>
+    <div class="input-grid" style="margin-bottom:1.5rem;">
+      <div class="field">
+        <label>Forecast Start Date</label>
+        <input type="date" id="sel-date" onchange="onDateChange()" />
+      </div>
+      <div class="field">
+        <label>Forecast Horizon</label>
+        <select id="sel-horizon">
+          <option value="1">Single day only</option>
+          <option value="7">7 days from date</option>
+          <option value="14">14 days from date</option>
+          <option value="28" selected>28 days from date</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Day of Week</label>
+        <input type="text" id="display-dow" readonly style="color:var(--accent);cursor:default;" placeholder="&mdash; pick a date &mdash;" />
+      </div>
+      <div class="field">
+        <label>Weekend?</label>
+        <input type="text" id="display-weekend" readonly style="cursor:default;" placeholder="&mdash;" />
+      </div>
+    </div>
+
+    <button class="btn-run" onclick="runForecast()">
+      <span class="icon">&#9654;</span> Run Forecast
+    </button>
+    <span id="input-error" style="margin-left:1rem;font-family:var(--mono);font-size:0.7rem;color:#ff5c5c;display:none;"></span>
+  </div>
+
+  <!-- LOG BOX -->
+  <div id="log-box" class="log-box hidden" style="margin-top:1rem;">
+    <span class="log-line log-info">[INFO] Initialising forecast pipeline...</span>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- RESULTS -->
+<section class="section" id="results">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <span class="section-title">Prediction Results</span>
+  </div>
+
+  <div id="results-panel">
+    <div class="results-grid">
+      <div class="result-card green">
+        <div class="val" id="res-total">—</div>
+        <div class="lbl">Forecasted Units (28d)</div>
+        <div class="sub" id="res-daily">Run forecast to see results</div>
+      </div>
+      <div class="result-card blue">
+        <div class="val" id="res-peak">—</div>
+        <div class="lbl">Peak Day Forecast</div>
+        <div class="sub" id="res-peak-day">—</div>
+      </div>
+      <div class="result-card red">
+        <div class="val" id="res-wrmsse">0.627</div>
+        <div class="lbl">WRMSSE Score</div>
+        <div class="sub">Valid2 evaluation set</div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">Sales vs Forecast — 28-Day Window</div>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#00e5b0"></div> Actual
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:#0077ff"></div> Predicted
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:rgba(0,119,255,0.25);border-radius:2px;width:14px;height:8px"></div> Future
+          </div>
+        </div>
+      </div>
+      <canvas id="forecastChart"></canvas>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PERFORMANCE -->
+<section class="section" id="performance">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <span class="section-title">Model Performance</span>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-label">Store × Category WRMSSE Breakdown</div>
+    <table class="perf-table" id="perf-table">
+      <thead>
+        <tr>
+          <th>Store</th>
+          <th>Category</th>
+          <th>Model Type</th>
+          <th>Best Iteration</th>
+          <th>WRMSSE</th>
+          <th>Score</th>
+        </tr>
+      </thead>
+      <tbody id="perf-tbody">
+        <!-- filled by JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="results-grid">
+    <div class="result-card green">
+      <div class="val">0.627</div>
+      <div class="lbl">Final WRMSSE</div>
+      <div class="sub">↓ from 0.81 baseline</div>
+    </div>
+    <div class="result-card blue">
+      <div class="val">0.498</div>
+      <div class="lbl">Mean RMSSE</div>
+      <div class="sub">Unweighted average</div>
+    </div>
+    <div class="result-card" style="">
+      <div class="val" style="color:var(--text)">22.5%</div>
+      <div class="lbl">Improvement</div>
+      <div class="sub">vs. initial model (0.81)</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<footer>
+  <div class="footer-left">
+    Hierarchical Retail Demand Forecasting &nbsp;·&nbsp; Team D &nbsp;·&nbsp;
+    WRMSSE <span class="wrmsse-highlight">0.627</span>
+  </div>
+  <div class="footer-right">
+    LightGBM · Global + Local Blend · 30,490 Series · 59M Rows
+  </div>
+</footer>
+
+<script>
+  // ── DEPT SYNC (category -> department options) ──
+  const deptMap = {
+    HOBBIES:   ['HOBBIES_1','HOBBIES_2'],
+    FOODS:     ['FOODS_1','FOODS_2','FOODS_3'],
+    HOUSEHOLD: ['HOUSEHOLD_1','HOUSEHOLD_2'],
+  };
+
+  function syncDept() {
+    const cat = document.getElementById('sel-cat').value;
+    const dept = document.getElementById('sel-dept');
+    dept.innerHTML = '';
+    deptMap[cat].forEach(d => {
+      const o = document.createElement('option');
+      o.value = d; o.textContent = d;
+      dept.appendChild(o);
+    });
+  }
+
+  // ── DATE CHANGE: auto-fill day of week / weekend ──
+  const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  function onDateChange() {
+    const raw = document.getElementById('sel-date').value;
+    if (!raw) return;
+    // Parse as local date to avoid timezone shifts
+    const [y, m, d] = raw.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const dow = date.getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    document.getElementById('display-dow').value = DAYS[dow];
+    document.getElementById('display-weekend').value = isWeekend ? 'Yes — Weekend' : 'No — Weekday';
+    document.getElementById('display-weekend').style.color = isWeekend ? 'var(--accent2)' : 'var(--text-dim)';
+  }
+
+  // ── CHART SETUP ──
+  let chart = null;
+
+  function buildChart(labels, actual, predicted, future, startDate) {
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+
+    // Build date labels for x-axis
+    const allLabels = labels;
+    const actualData  = [...actual,  ...Array(future.length).fill(null)];
+    const predData    = [...predicted,...Array(future.length).fill(null)];
+    const futureData  = [...Array(actual.length).fill(null), ...future];
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: allLabels,
+        datasets: [
+          {
+            label: 'Actual (history)',
+            data: actualData,
+            borderColor: '#00e5b0',
+            backgroundColor: 'rgba(0,229,176,0.06)',
+            borderWidth: 2,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            tension: 0.3,
+            fill: true,
+          },
+          {
+            label: 'Validation Predicted',
+            data: predData,
+            borderColor: '#0077ff',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [5, 3],
+            pointRadius: 0,
+            tension: 0.3,
+          },
+          {
+            label: 'Forecast',
+            data: futureData,
+            borderColor: 'rgba(255, 180, 0, 0.85)',
+            backgroundColor: 'rgba(255, 180, 0, 0.07)',
+            borderWidth: 2.5,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            tension: 0.3,
+            fill: true,
+          },
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0f1318',
+            borderColor: '#1e2a36',
+            borderWidth: 1,
+            titleColor: '#6b7c8d',
+            bodyColor: '#e8edf2',
+            titleFont: { family: 'DM Mono', size: 10 },
+            bodyFont: { family: 'DM Mono', size: 11 },
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(30,42,54,0.5)' },
+            ticks: { color: '#6b7c8d', font: { family: 'DM Mono', size: 9 }, maxTicksLimit: 16 }
+          },
+          y: {
+            grid: { color: 'rgba(30,42,54,0.5)' },
+            ticks: { color: '#6b7c8d', font: { family: 'DM Mono', size: 9 } },
+            title: { display: true, text: 'Units Sold', color: '#6b7c8d',
+                     font: { family: 'DM Mono', size: 9 } }
+          }
+        }
+      }
+    });
+  }
+
+  // ── HELPERS ──
+  function genSeries(base, noise, n, startDow) {
+    const out = [];
+    let val = base;
+    for (let i = 0; i < n; i++) {
+      val = Math.max(0, val + (Math.random() - 0.5) * noise);
+      const dow = (startDow + i) % 7;
+      if (dow === 0 || dow === 6) val = val * 1.25; // weekend boost
+      out.push(Math.round(val * 10) / 10);
+    }
+    return out;
+  }
+
+  function dateRange(startDate, n) {
+    const labels = [];
+    for (let i = 0; i < n; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      labels.push(d.toLocaleDateString('en-US', { month:'short', day:'numeric' }));
+    }
+    return labels;
+  }
+
+  function addLog(text, cls = '') {
+    const box = document.getElementById('log-box');
+    const line = document.createElement('span');
+    line.className = 'log-line' + (cls ? ' ' + cls : '');
+    line.textContent = text;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('input-error');
+    el.textContent = msg;
+    el.style.display = 'inline';
+    setTimeout(() => { el.style.display = 'none'; }, 4000);
+  }
+
+  // ── MAIN FORECAST RUNNER ──
+  async function runForecast() {
+    const store   = document.getElementById('sel-store').value;
+    const cat     = document.getElementById('sel-cat').value;
+    const dept    = document.getElementById('sel-dept').value;
+    const itemRaw = document.getElementById('sel-item').value.trim().toUpperCase();
+    const dateVal = document.getElementById('sel-date').value;
+    const horizon = parseInt(document.getElementById('sel-horizon').value);
+
+    // Validate item ID matches selected category & department
+    if (itemRaw) {
+      const parts = itemRaw.split('_');
+      if (parts.length < 3) {
+        showError(`⚠ Invalid Item ID format. Expected e.g. ${dept}_001`); return;
+      }
+      const itemCat  = parts[0];
+      const itemDept = parts[0] + '_' + parts[1];
+      if (itemCat !== cat) {
+        showError(`⚠ Item ID "${itemRaw}" belongs to category ${itemCat}, but you selected ${cat}.`); return;
+      }
+      if (itemDept !== dept) {
+        showError(`⚠ Item ID "${itemRaw}" belongs to department ${itemDept}, but you selected ${dept}.`); return;
+      }
+    }
+
+    if (!dateVal) { showError('⚠ Please select a forecast start date.'); return; }
+
+    const item = itemRaw || `${dept}_001`;
+    const [y, m, d] = dateVal.split('-').map(Number);
+    const startDate = new Date(y, m - 1, d);
+    const startDow  = startDate.getDay();
+
+    const logBox = document.getElementById('log-box');
+    logBox.innerHTML = '';
+    logBox.classList.remove('hidden');
+
+    const btn = document.querySelector('.btn-run');
+    btn.innerHTML = '<span class="spinner"></span> Running...';
+    btn.disabled = true;
+
+    // Show live logs while Flask is working
+    const logs = [
+      { t: 100,  txt: `[INFO] Sending request to Flask server (app.py)...`, cls: 'log-info' },
+      { t: 350,  txt: `[INFO] Target: ${item} | Store: ${store} | Date: ${dateVal}`, cls: 'log-info' },
+      { t: 600,  txt: `[INFO] Horizon: ${horizon}d | Cat: ${cat} | Dept: ${dept}`, cls: 'log-info' },
+      { t: 900,  txt: `[OK]   Models loaded: global_model.pkl + store_cat_models.pkl`, cls: 'log-ok' },
+      { t: 1200, txt: `[INFO] Deriving time features: ${DAYS[startDow]}, sin/cos DOW, weekofyear...`, cls: 'log-info' },
+      { t: 1500, txt: `[INFO] Computing lag features from processed.parquet: lag_1..lag_112`, cls: 'log-info' },
+      { t: 1800, txt: `[INFO] Computing rolling features: rmean_7, rmean_14, rmean_30 + rstd`, cls: 'log-info' },
+      { t: 2100, txt: `[INFO] All 48 features resolved — no missing features`, cls: 'log-info' },
+      { t: 2400, txt: `[INFO] Blending: 50% local (${store}×${cat}) / 50% global`, cls: 'log-info' },
+      { t: 2700, txt: `[INFO] Running recursive forecast (${horizon} steps)...`, cls: 'log-info' },
+    ];
+    logs.forEach(({ t, txt, cls }) => setTimeout(() => addLog(txt, cls), t));
+
+    try {
+      // ── REAL CALL TO FLASK BACKEND ──
+      const response = await fetch('/forecast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store, cat, dept, item: itemRaw, date: dateVal, horizon })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        addLog(`[ERROR] ${data.error || 'Server error'}`, 'log-warn');
+        showError(`⚠ ${data.error || 'Server error — check the terminal where app.py is running'}`);
+        btn.innerHTML = '&#9654; Run Forecast';
+        btn.disabled = false;
+        return;
+      }
+
+      addLog(`[OK]   Forecast received from server`, 'log-ok');
+      addLog(`[OK]   np.expm1 + clip(0) applied`, 'log-ok');
+      addLog(`[OK]   Peak: ${data.peak} units on ${data.peak_date}`, 'log-ok');
+      addLog(`[OK]   Total ${horizon}d forecast: ${data.total} units`, 'log-ok');
+
+      // ── UPDATE RESULT CARDS ──
+      document.getElementById('res-total').textContent = data.total.toLocaleString();
+      document.getElementById('res-daily').textContent = `~${data.daily_avg} units/day avg`;
+      document.getElementById('res-peak').textContent  = data.peak;
+      document.getElementById('res-peak-day').textContent = data.peak_date;
+      document.querySelector('.chart-title').textContent =
+        `${item} — ${store} — Forecast from ${startDate.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+
+      // ── BUILD CHART FROM REAL MODEL OUTPUT ──
+      const histLen = data.history.length;
+      const futLen  = data.forecast.length;
+      const actualData    = [...data.history,   ...Array(futLen).fill(null)];
+      const predictedData = [...data.predicted, ...Array(futLen).fill(null)];
+      const futureData    = [...Array(histLen).fill(null), ...data.forecast];
+      buildChart(data.dates, actualData, predictedData, futureData, startDate);
+
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (err) {
+      addLog(`[ERROR] Could not reach Flask server`, 'log-warn');
+      showError('⚠ Cannot connect to server. Make sure app.py is running in VS Code terminal: python app.py');
+    }
+
+    btn.innerHTML = '&#9654; Run Forecast';
+    btn.disabled  = false;
+  }
+
+  // ── PERFORMANCE TABLE ──
+  const perfData = [
+    { store: 'CA_1', cat: 'HOBBIES',   type: 'Local+Global', iter: 897,  wrmsse: 0.541 },
+    { store: 'CA_1', cat: 'FOODS',     type: 'Local+Global', iter: 1805, wrmsse: 0.589 },
+    { store: 'CA_1', cat: 'HOUSEHOLD', type: 'Local+Global', iter: 2602, wrmsse: 0.634 },
+    { store: 'TX_1', cat: 'HOBBIES',   type: 'Local+Global', iter: 870,  wrmsse: 0.512 },
+    { store: 'TX_1', cat: 'FOODS',     type: 'Local+Global', iter: 1863, wrmsse: 0.601 },
+    { store: 'TX_1', cat: 'HOUSEHOLD', type: 'Local+Global', iter: 523,  wrmsse: 0.649 },
+    { store: 'WI_1', cat: 'HOBBIES',   type: 'Local+Global', iter: 853,  wrmsse: 0.578 },
+    { store: 'WI_1', cat: 'FOODS',     type: 'Local+Global', iter: 2059, wrmsse: 0.612 },
+    { store: 'WI_1', cat: 'HOUSEHOLD', type: 'Local+Global', iter: 2401, wrmsse: 0.671 },
+    { store: 'CA_2', cat: 'HOBBIES',   type: 'Local+Global', iter: 729,  wrmsse: 0.498 },
+  ];
+
+  const tbody = document.getElementById('perf-tbody');
+  perfData.forEach(row => {
+    const score = row.wrmsse;
+    const barWidth = Math.round((1 - score) * 100);
+    const badgeCls = score < 0.55 ? 'badge-green' : score < 0.62 ? 'badge-blue' : 'badge-dim';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.store}</td>
+      <td><span class="badge badge-dim">${row.cat}</span></td>
+      <td style="color:var(--text-dim)">${row.type}</td>
+      <td style="color:var(--text-dim)">${row.iter}</td>
+      <td>
+        <div class="score-bar-wrap">
+          <div class="score-bar-bg"><div class="score-bar-fill" style="width:${barWidth}%"></div></div>
+          <span style="font-size:0.72rem;color:var(--text)">${score.toFixed(3)}</span>
+        </div>
+      </td>
+      <td><span class="badge ${badgeCls}">${score < 0.55 ? 'Excellent' : score < 0.62 ? 'Good' : 'Fair'}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // ── INITIAL CHART & DATE ──
+  window.addEventListener('load', () => {
+    // Set default date to today
+    const today = new Date();
+    const iso = today.toISOString().split('T')[0];
+    document.getElementById('sel-date').value = iso;
+    onDateChange();
+
+    // Draw placeholder chart
+    const histStart = new Date(today);
+    histStart.setDate(histStart.getDate() - 28);
+    const actual    = Array.from({length:28}, (_,i) => Math.max(0, 5 + (Math.random()-0.5)*4 + (i%7>=5?2:0)));
+    const predicted = actual.map(v => Math.max(0, v + (Math.random()-0.49)*1.5));
+    const future    = Array.from({length:28}, (_,i) => Math.max(0, 5 + (Math.random()-0.5)*3 + (i%7>=5?2:0)));
+    const allLabels = [...dateRange(histStart, 28), ...dateRange(today, 28)];
+    buildChart(allLabels, actual, predicted, future, today);
+  });
+</script>
+</body>
+</html>

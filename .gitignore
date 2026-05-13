@@ -1,0 +1,25 @@
+# Data
+data/
+*.csv
+*.parquet
+*.h5
+
+# Models
+models/
+*.joblib
+*.pkl
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
