@@ -50,7 +50,7 @@ demand_forecast/
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/suhaschandu/Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset-.git
+    git clone https://github.com/tharunkm78/Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset.git
     cd demand_forecast
     ```
 
@@ -101,7 +101,7 @@ The model is optimized across all 12 levels of the M5 hierarchy:
 ## 🌐 Live Presentation Site
 
 We have created a premium, blog-style interactive presentation for this project.
-**[View the Live Story & Interactive Charts →](https://suhaschandu.github.io/Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset-/)**
+**[View the Live Story & Interactive Charts →](https://tharunkm78.github.io/Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset/)**
 
 ---
 
