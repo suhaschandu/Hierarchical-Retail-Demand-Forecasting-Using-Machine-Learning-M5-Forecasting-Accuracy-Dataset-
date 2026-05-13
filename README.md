@@ -98,10 +98,38 @@ The model is optimized across all 12 levels of the M5 hierarchy:
 
 ---
 
-## 🌐 Live Presentation Site
+## 🖥️ Interactive Dashboard (Local)
 
-We have created a premium, blog-style interactive presentation for this project.
-**[View the Live Story & Interactive Charts →](https://tharunkm78.github.io/Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset/)**
+The repository includes a Flask-based interactive dashboard (`app.py`) that allows you to run live inference on any store/category combination.
+
+### How to Run:
+1.  **Pre-requisite**: Ensure you have run `main.py` at least once to generate the trained models in the `models/` folder and processed data in `data/`.
+2.  **Start the Server**:
+    ```bash
+    python app.py
+    ```
+3.  **Access the Dashboard**: Open your browser and navigate to `http://127.0.0.1:5000`.
+
+### Dashboard Features:
+- **Target Selection**: Filter by Store (e.g., CA_1), Category (e.g., HOBBIES), and Department.
+- **Granular Search**: Optionally enter a specific **Item ID** to forecast a single product.
+- **Horizon Control**: Choose how many days into the future you want to predict (up to 90 days).
+- **Live Charts**: View historical sales vs. model predictions vs. future forecasts in real-time.
+
+---
+
+## 🌐 How to Interact with the Website
+
+We provide two distinct web experiences:
+
+### 1. The Presentation Story (GitHub Pages)
+- **Purpose**: This is a high-level overview of our methodology and results designed for stakeholders.
+- **Interaction**: Scroll through the "Story" sections to learn about our data processing, model blending strategy, and final performance.
+- **Live Link**: [View Presentation Site →](https://tharunkm78.github.io/Hierarchical-Retail-Demand-Forecasting-Using-Machine-Learning-M5-Forecasting-Accuracy-Dataset/)
+
+### 2. The Live Forecaster (Local App)
+- **Purpose**: A functional tool for supply chain managers to generate future demand signals.
+- **Interaction**: Use the sidebar to select your target parameters and click **"Run Forecast"**. The system will dynamically load the relevant LightGBM model and generate a recursive 28+ day forecast.
 
 ---
 
